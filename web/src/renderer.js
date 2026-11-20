@@ -18,6 +18,16 @@ export function projectDuration(project) {
   return project.scenes.reduce((s, sc) => s + (Number(sc.dur) || 4), 0);
 }
 
+// Detik mulai tiap scene. Dipakai untuk menata audio TTS di timeline export.
+export function sceneStarts(project) {
+  let acc = 0;
+  return project.scenes.map((sc) => {
+    const start = acc;
+    acc += Number(sc.dur) || 4;
+    return start;
+  });
+}
+
 // Cari scene aktif pada detik t. Kembalikan {scene, index, start, local, progress}
 export function sceneAt(project, t) {
   let acc = 0;

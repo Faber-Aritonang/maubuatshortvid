@@ -1,6 +1,49 @@
-// TTS via Web Speech API (tanpa API key) + estimasi word-timing merata.
-// Di browser yang mendukung boundary events, timing diperbarui real-time;
-// fallback: tiap kata = durasiScene / jumlahKata.
+// Dua jalur suara:
+//   1) TTS sungguhan lewat server kecil (server/index.mjs) — suara natural, bisa dirender offline
+//      dan ikut ke video. Kunci API tidak pernah ada di browser.
+//   2) Fallback Web Speech API (tanpa API key) untuk pratinjau cepat.
+// Timing kata tetap diestimasi merata (dibagi durasi scene).
+
+const TTS_CACHE_KEY = 'mbts:tts-status';
+let statusCache = null;
+
+// Tanya server: penyedia apa yang aktif dan suara apa saja yang tersedia.
+export async function ttsStatus({ force = false } = {}) {
+  if (statusCache && !force) return statusCache;
+  try {
+    const res = await fetch('/api/health', { headers: { accept: 'application/json' } });
+    const data = await res.json();
+    statusCache = data && data.tts ? data.tts : { provider: 'none', ready: false, voices: [], defaultVoice: '' };
+  } catch {
+    statusCache = { provider: 'none', ready: false, voices: [], defaultVoice: '', offline: true };
+  }
+  try { sessionStorage.setItem(TTS_CACHE_KEY, JSON.stringify(statusCache)); } catch { /* abaikan */ }
+  return statusCache;
+}
+
+// Minta satu potong suara (mp3) ke server. Lempar error berisi pesan siap tampil.
+export async function synthesize(text, { voice, speed = 1 } = {}) {
+  const clean = String(text || '').trim();
+  if (!clean) throw new Error('Teks kosong.');
+  let res;
+  try {
+    res = await fetch('/api/tts', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: clean, voice, speed }),
+    });
+  } catch {
+    throw new Error('Server TTS tidak terjangkau. Jalankan `npm run server` di terminal lain.');
+  }
+  if (!res.ok) {
+    let msg = `TTS gagal (${res.status}).`;
+    try { const j = await res.json(); if (j.error) msg = j.error + (j.need ? ' ' + j.need : ''); } catch { /* biarkan */ }
+    const err = new Error(msg);
+    err.code = res.status;
+    throw err;
+  }
+  return res.blob();
+}
 
 export function pickVoice(lang = 'id-ID') {
   const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];

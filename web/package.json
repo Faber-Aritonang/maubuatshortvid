@@ -1,15 +1,19 @@
 {
   "name": "maubuatshortvid-web",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
-  "description": "Clean-room short video prototype: script -> TTS -> karaoke subtitle -> canvas animation -> WebM export",
+  "description": "Clean-room short video prototype: script -> real TTS -> karaoke subtitle -> canvas animation -> MP4 export, all in the browser",
   "scripts": {
     "dev": "vite",
+    "server": "node ../server/index.mjs",
     "build": "vite build",
+    "start": "node ../server/index.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
+    "mediabunny": "^1.66.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

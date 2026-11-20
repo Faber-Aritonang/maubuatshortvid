@@ -51,14 +51,43 @@ kata terakhir dengan `t <= waktuLokal`. Bila TTS browser tidak memberi timestamp
 `cut, fade (alpha), slide (geser x), zoom (scale 0.9->1), wipe (persegi meluas)`.
 Hanya di 0.35 dtk pertama scene (kecuali `cut`).
 
+## Audio TTS (`tts.js` + `audio.js`)
+
+```
+teks scene -> POST /api/tts (server kecil, kunci API di server) -> mp3
+          -> decodeAudioData -> AudioBuffer per scene
+          -> OfflineAudioContext: tempel tiap buffer di detik mulai scene
+          -> satu mix sepanjang timeline
+```
+
+Mix ini dipakai dua kali: diputar untuk pratinjau (`playMix`) dan dimasukkan
+sebagai track suara saat export. Jadi yang didengar = yang diunduh.
+Hasil sintesis di-cache per `(teks, suara, kecepatan)` agar export tidak memanggil
+API dua kali. Tanpa server TTS, tombol "Suara browser" memakai Web Speech API.
+
 ## Exporter (`exporter.js`)
 
 ```
-canvas.captureStream(30) + audioElement.captureStream()
- -> new MediaRecorder(combined, {mimeType: 'video/webm;codecs=vp9,opus'})
- -> ondataavailable kumpulkan Blob -> Blob('video/webm') -> unduh
+drawProject(canvas, t) per frame 1/30 dtk
+ -> CanvasSource(canvas, {codec: avc|vp9})   (mediabunny/WebCodecs)
+ -> AudioBufferSource({codec: aac|opus}) <- mix dari audio.js
+ -> Output(Mp4OutputFormat | WebMOutputFormat) -> BufferTarget -> Blob -> unduh
 ```
 
-Dipilih MediaRecorder (dukungan luas, tanpa dependensi, tanpa server) dibanding
-muxer MP4 manual. Hasil `.webm` diputar di semua browser/HP modern; konversi ke
-MP4 bisa via `ffmpeg` satu baris (lihat `docs/04-api.md`).
+Mediabunny dipakai sebagai muxer + pembungkus WebCodecs. Encode berjalan lebih
+cepat dari realtime (tidak merekam 30 dtk penuh) dan audio ikut termux.
+
+| Format | Video | Audio | Catatan |
+|---|---|---|---|
+| MP4 | H.264 (avc1) | AAC bila browser punya encoder-nya, jika tidak Opus | Chrome Linux/headless tidak punya AAC; macOS/Windows umumnya punya |
+| WebM | VP9 | Opus | Ukuran lebih kecil, dukungan pemutar lebih sempit dari MP4 |
+
+Kalau browser tidak punya WebCodecs sama sekali, `exportVideo` jatuh ke jalur lama
+MediaRecorder (`canvas.captureStream` -> WebM, realtime, tanpa audio) supaya tetap
+bisa dipakai, dengan catatan di UI.
+
+Cek cepat di DevTools, sebelum export:
+
+```js
+document.createElement('canvas').getContext('2d') && !!(window.VideoEncoder)
+```
