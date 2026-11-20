@@ -4,7 +4,10 @@ import { STYLES, CAMERAS, TRANSITIONS } from './styles.js';
 import { ensureTiming, speakAll, stopSpeak, ttsStatus } from './tts.js';
 import { exportVideo, downloadBlob, probeExportSupport } from './exporter.js';
 import { buildMix, cachedAudio, playMix, stopMix } from './audio.js';
-import { isCloudConfigured, saveProject, listProjects, loadProject } from './cloud.js';
+import { isCloudConfigured, saveProject, listProjects, loadProject, signedImageUrl } from './cloud.js';
+import {    newImageId, downscaleImage, putImageBlob, putImageUrl, imageElements,
+    imageUrl, imageBlob, imageName, imageReady, imageDataUrl, dataUrlToBlob, removeImage,
+} from './images.js';
 
 const HUES = [210, 160, 265, 15, 330, 190];
 
@@ -51,6 +54,8 @@ export default function App() {
   const [support, setSupport] = useState(null);
   const [result, setResult] = useState('');
   const [cloud, setCloud] = useState({ configured: isCloudConfigured(), msg: '', list: [], id: null });
+  const [imgMsg, setImgMsg] = useState('');
+  const [imgTick, setImgTick] = useState(0); // gambar ulang saat elemen gambar selesai dimuat
   const canvasRef = useRef(null);
   const rafRef = useRef(0);
   const t0Ref = useRef(0);
@@ -65,13 +70,13 @@ export default function App() {
     [project, voice, rate],
   );
 
-  // gambar ulang tiap ada perubahan waktu/project
+  // gambar ulang tiap ada perubahan waktu/project/gambar
   useEffect(() => {
     const cv = canvasRef.current;
     if (!cv) return;
     const ctx = cv.getContext('2d');
-    drawProject(ctx, project, time);
-  }, [project, time]);
+    drawProject(ctx, project, time, imageElements());
+  }, [project, time, imgTick]); // eslint-disable-line
 
   // status TTS + dukungan export browser
   useEffect(() => {
@@ -123,9 +128,35 @@ export default function App() {
 
   function removeScene(i) {
     if (project.scenes.length <= 1) return;
+    const gone = project.scenes[i];
+    if (gone && gone.img) removeImage(gone.img);
     setProject((p) => ensureTiming({ ...p, scenes: p.scenes.filter((_, k) => k !== i) }));
     setSel(0);
     setTime(0);
+  }
+
+  async function pickImage(e) {
+    const f = e.target.files && e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    if (!f.type.startsWith('image/')) { setImgMsg('File harus gambar (JPG/PNG/WebP).'); return; }
+    if (f.size > 10 * 1048576) { setImgMsg('Gambar maksimal 10 MB.'); return; }
+    setImgMsg('');
+    try {
+      const { blob, name } = await downscaleImage(f);
+      const id = s.img || newImageId();
+      await putImageBlob(id, blob, name);
+      patchScene(sel, { img: id });
+      setImgTick((t) => t + 1);
+    } catch (err) {
+      setImgMsg(err.message);
+    }
+  }
+
+  function clearBg() {
+    if (s.img) removeImage(s.img);
+    patchScene(sel, { img: null });
+    setImgMsg('');
   }
 
   function togglePlay() {
@@ -201,10 +232,13 @@ export default function App() {
           setMixDur(built.duration);
         }
       }
+      // tunggu gambar latar selesai dimuat agar ikut terender di video
+      await Promise.all(timed.scenes.filter((sc) => sc.img).map((sc) => imageReady(sc.img).catch(() => null)));
+      const photos = imageElements();
       const totalDur = Math.max(projectDuration(timed), audioBuffer ? audioBuffer.duration : 0);
       const res = await exportVideo({
         canvas: cv,
-        draw: (t) => drawProject(ctx, timed, t),
+        draw: (t) => drawProject(ctx, timed, t, photos),
         totalDur,
         audioBuffer,
         format,
@@ -216,27 +250,79 @@ export default function App() {
         (res.audioCodec ? ` + ${res.audioCodec}` : '') + (res.note || ''),
       );
       setBusy('');
-      drawProject(ctx, timed, time); // kembalikan pratinjau ke posisi playhead, bukan frame terakhir export
+      drawProject(ctx, timed, time, imageElements()); // kembalikan pratinjau ke posisi playhead
     } catch (e) {
       setBusy('');
       setResult('Gagal: ' + e.message);
     }
   }
 
-  function exportJSON() {
-    downloadBlob(new Blob([JSON.stringify(project, null, 2)], { type: 'application/json' }), 'project.json');
+  // Gambar disertakan sebagai data URL (sudah dikecilkan saat dipilih).
+  // Entri > 2 MB dilewati agar file JSON tetap ringan.
+  async function projectWithImageData(timed) {
+    const images = {};
+    for (let i = 0; i < timed.scenes.length; i++) {
+      const id = timed.scenes[i].img;
+      if (!id) continue;
+      try {
+        const dataUrl = await imageDataUrl(id);
+        if (dataUrl && dataUrl.length < 2 * 1048576) images[i] = { name: imageName(id), dataUrl };
+      } catch { /* lewati gambar rusak */ }
+    }
+    return { ...timed, images };
+  }
+
+  // Kembalikan entri images (data URL milik JSON, atau path storage milik cloud)
+  // menjadi gambar lokal. Kembalikan jumlah yang berhasil dimuat.
+  async function restoreImages(images) {
+    if (!images || typeof images !== 'object') return { scenes: null, loaded: 0 };
+    const map = {}; // index scene -> image id
+    let loaded = 0;
+    for (const [key, val] of Object.entries(images)) {
+      if (typeof val !== 'string' && !(val && (val.dataUrl || val.path))) continue;
+      const dataUrl = typeof val === 'string' && val.startsWith('data:') ? val : (val.dataUrl || null);
+      const path = typeof val === 'string' && !val.startsWith('data:') ? val : (val.path || null);
+      const name = (val && val.name) || 'latar.jpg';
+      try {
+        const id = newImageId();
+        if (dataUrl) {
+          await putImageBlob(id, await dataUrlToBlob(dataUrl), name);
+        } else if (path && isCloudConfigured()) {
+          const url = await signedImageUrl(path);
+          if (!url) continue;
+          await putImageUrl(id, url, null, name);
+        } else continue;
+        map[key] = id;
+        loaded++;
+      } catch { /* lewati gambar yang gagal */ }
+    }
+    return { map, loaded };
+  }
+
+  function applyImageMap(scenes, map) {
+    return scenes.map((sc, i) => (map[i] ? { ...sc, img: map[i] } : { ...sc, img: sc.img || null }));
+  }
+
+  async function exportJSON() {
+    const withImg = await projectWithImageData(ensureTiming(project));
+    downloadBlob(new Blob([JSON.stringify(withImg, null, 2)], { type: 'application/json' }), 'project.json');
   }
 
   function importJSON(e) {
     const f = e.target.files && e.target.files[0];
     if (!f) return;
-    f.text().then((t) => {
+    f.text().then(async (t) => {
       try {
         const p = JSON.parse(t);
         if (!Array.isArray(p.scenes) || !p.scenes.length) throw new Error('bad');
-        setProject(ensureTiming({ version: 1, scenes: p.scenes.slice(0, 6) }));
+        const { map, loaded } = await restoreImages(p.images);
+        let scenes = p.scenes.slice(0, 6);
+        if (map) scenes = applyImageMap(scenes, map);
+        setProject(ensureTiming({ version: 1, scenes }));
         setSel(0);
         setTime(0);
+        setImgTick((x) => x + 1);
+        setImgMsg(loaded ? `${loaded} gambar latar ikut dimuat.` : '');
       } catch {
         alert('File project tidak valid.');
       }
@@ -253,11 +339,20 @@ export default function App() {
         const hit = cachedAudio(sc.text, { voice, speed: rate });
         if (hit) blobs.push({ index: i, blob: hit.blob });
       });
+      const imgBlobs = [];
+      timed.scenes.forEach((sc, i) => {
+        if (!sc.img) return;
+        const blob = imageBlob(sc.img);
+        if (blob) imgBlobs.push({ index: i, blob, name: imageName(sc.img) });
+      });
       const { id } = await saveProject({
-        title, project: timed, audioBlobs: blobs, cloudId: cloud.id,
+        title, project: timed, audioBlobs: blobs, imageBlobs: imgBlobs, cloudId: cloud.id,
         onProgress: (p, label) => setCloud((c) => ({ ...c, msg: label })),
       });
-      setCloud((c) => ({ ...c, id, msg: `Tersimpan${blobs.length ? ` + ${blobs.length} audio` : ''} · ${id.slice(0, 8)}` }));
+      const parts = [];
+      if (blobs.length) parts.push(`${blobs.length} audio`);
+      if (imgBlobs.length) parts.push(`${imgBlobs.length} gambar`);
+      setCloud((c) => ({ ...c, id, msg: `Tersimpan${parts.length ? ' + ' + parts.join(' + ') : ''} · ${id.slice(0, 8)}` }));
     } catch (e) {
       setCloud((c) => ({ ...c, msg: e.message }));
     }
@@ -276,11 +371,15 @@ export default function App() {
   async function handleCloudOpen(id) {
     try {
       const row = await loadProject(id);
-      setProject(ensureTiming({ version: 1, scenes: row.payload.scenes.slice(0, 6) }));
+      let scenes = row.payload.scenes.slice(0, 6);
+      const { map, loaded } = await restoreImages(row.payload.images);
+      if (map) scenes = applyImageMap(scenes, map);
+      setProject(ensureTiming({ version: 1, scenes }));
       setTitle(row.title);
-      setCloud((c) => ({ ...c, id, list: [], msg: `Dibuka: ${row.title}` }));
+      setCloud((c) => ({ ...c, id, list: [], msg: `Dibuka: ${row.title}${loaded ? ` (${loaded} gambar)` : ''}` }));
       setSel(0);
       setTime(0);
+      setImgTick((x) => x + 1);
     } catch (e) {
       setCloud((c) => ({ ...c, msg: e.message }));
     }
@@ -403,6 +502,16 @@ export default function App() {
               <input type="range" min="0.7" max="1.3" step="0.05" value={rate} onChange={(e) => setRate(Number(e.target.value))} />
             </div>
           </div>
+
+          <div className="row" style={{ marginTop: 8, alignItems: 'center' }}>
+            <label style={{ fontSize: 13, color: 'var(--mut)' }}>Gambar latar scene {sel + 1}</label>
+            <label className="filebtn">Pilih gambar<input type="file" accept="image/*" hidden onChange={pickImage} /></label>
+            {s.img && imageUrl(s.img) && (
+              <img src={imageUrl(s.img)} alt="Latar" style={{ width: 54, height: 96, objectFit: 'cover', borderRadius: 6, border: '1px solid var(--line)' }} />
+            )}
+            {s.img && <button onClick={clearBg}>Hapus</button>}
+          </div>
+          {imgMsg && <p className="hint">{imgMsg}</p>}
 
           <p className="hint">Scene aktif: {cur.index + 1} · {cur.scene.style} · {cur.scene.camera} · {cur.scene.transition}</p>
 

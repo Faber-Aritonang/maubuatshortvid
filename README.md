@@ -35,7 +35,8 @@ Kunci API hanya dibaca server; tidak pernah ikut ke bundle browser.
 1. Tulis naskah per scene, atur gaya subtitle / kamera / transisi / durasi.
 2. **Buat suara TTS** → audio per scene disusun jadi satu timeline (pratinjau memakai audio yang sama).
 3. **Putar** untuk cek sinkronisasi; geser seekbar untuk melompat.
-4. **Export MP4** (atau WebM) — hasilnya langsung terunduh, sudah ada suaranya.
+4. (Opsional) **Pilih gambar** di tiap scene untuk gambar latar foto (diperkecil otomatis, menutupi layar).
+5. **Export MP4** (atau WebM) — hasilnya langsung terunduh, sudah ada suaranya.
 
 Export memakai WebCodecs lewat [mediabunny](https://mediabunny.dev): frame digambar
 dan di-encode lebih cepat dari realtime, lalu audio TTS dimux ke dalam file.
@@ -60,8 +61,9 @@ npm run dev
 ```
 
 Panel kanan lalu menampilkan **Simpan ke cloud** dan **Daftar project**; audio tiap
-scene ikut diunggah ke bucket `project-audio`. Tanpa dua variabel itu, semuanya tetap
-lokal (Simpan/Buka JSON).
+scene ikut diunggah ke bucket `project-audio`, gambar latar ke bucket
+`project-images`. Tanpa dua variabel itu, semuanya tetap lokal: Simpan JSON menyertakan
+gambar sebagai data URL, Buka JSON memuatnya kembali.
 
 ## Struktur repo
 
@@ -79,10 +81,10 @@ supabase/
   schema.sql            Skema original (4 tabel + RPC + storage)
 web/
   src/
-    App.jsx             Editor + transport + TTS + export + cloud
-    renderer.js         Engine Canvas 2D (original)
-    exporter.js         MP4/WebM via mediabunny (WebCodecs)
-    audio.js            TTS -> AudioBuffer -> mix timeline
+    App.jsx             Editor + transport + TTS + export + cloud      renderer.js         Engine Canvas 2D (original)
+      exporter.js         MP4/WebM via mediabunny (WebCodecs)
+      audio.js            TTS -> AudioBuffer -> mix timeline
+      images.js           Gambar latar: downscale, cache elemen, data URL
     tts.js              Klien TTS server + fallback Web Speech
     cloud.js            Simpan/buka project Supabase
     styles.js           7 gaya subtitle + 5 kamera + 5 transisi (original)

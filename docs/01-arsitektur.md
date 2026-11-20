@@ -28,6 +28,7 @@ Supabase, project disimpan sebagai file JSON.
 | Gaya | `web/src/styles.js` | Observasi umum (karaoke, ketik, neon) | 7 gaya original, parameter sendiri |
 | Exporter | `web/src/exporter.js` | WebCodecs + library muxer publik (mediabunny) | Tidak memakai encoder proprietary milik pihak lain |
 | Audio pipeline | `web/src/audio.js` | WebAudio `OfflineAudioContext` standar | Mix sendiri: tiap scene di detik mulainya |
+| Gambar latar | `web/src/images.js` + Storage `project-images` | Canvas `drawImage` + `toBlob` standar | Downscale di browser, path `uid/project/bg-N.jpg` |
 | TTS | `web/src/tts.js` + `server/index.mjs` | REST penyedia TTS umum (OpenAI/ElevenLabs) | Proxy milik sendiri, kunci di server; fallback Web Speech |
 | Cloud | `web/src/cloud.js` | supabase-js standar | Upload audio ke bucket sendiri, RLS |
 | Skema DB | `supabase/schema.sql` | Desain sendiri minimal | 4 tabel, bukan replika tabel pihak lain |
@@ -35,6 +36,7 @@ Supabase, project disimpan sebagai file JSON.
 ## Batas yang disengaja (v0.2)
 - Timeline 1 track, 1-6 scene, tiap scene 1 teks + 1 gaya + 1 kamera + 1 transisi.
 - Export mengikuti ukuran canvas (720x1280) pada 30 fps.
-- Audio: satu suara TTS per scene, disusun di timeline; belum ada musik latar atau upload manual.
+- Audio: satu suara TTS per scene, disusun di timeline; belum ada musik latar.
+- Gambar: satu gambar latar per scene (JPG/PNG/WebP ≤ 10 MB, diperkecil ≤ 720px di browser).
 - Tidak ada: login wajib, pembayaran, afiliasi, AI naskah server, SFX library.
   Semua itu ada di `docs/05-roadmap.md` sebagai pekerjaan baru, bukan hasil salin.

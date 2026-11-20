@@ -59,12 +59,28 @@ function applyCamera(ctx, camera, p) {
   ctx.translate(-W / 2, -H / 2);
 }
 
-function drawBackground(ctx, hue, p) {
+// Gambar latar opsional (HTMLImageElement siap tampil) digambar cover di atas
+// gradasi, dengan margin agar kamera push/pull tidak menyisakan tepi kosong.
+function drawCoverImage(ctx, el) {
+  const sw = el.naturalWidth || el.width;
+  const sh = el.naturalHeight || el.height;
+  if (!sw || !sh) return;
+  const M = 160; // margin menutup zoom kamera 1.12x
+  const dw = W + M * 2;
+  const dh = H + M * 2;
+  const s = Math.max(dw / sw, dh / sh);
+  const w = sw * s;
+  const h = sh * s;
+  ctx.drawImage(el, -M + (dw - w) / 2, -M + (dh - h) / 2, w, h);
+}
+
+function drawBackground(ctx, hue, p, photo) {
   const g = ctx.createLinearGradient(0, 0, 0, H);
   g.addColorStop(0, `hsl(${hue},45%,14%)`);
   g.addColorStop(1, `hsl(${(hue + 40) % 360},55%,26%)`);
   ctx.fillStyle = g;
   ctx.fillRect(-100, -100, W + 200, H + 200);
+  if (photo) drawCoverImage(ctx, photo);
 
   // dekorasi prosedural: lingkaran + garis grid samar
   ctx.save();
@@ -242,12 +258,14 @@ function applyTransitionIn(ctx, transition, local) {
   return true;
 }
 
-export function drawProject(ctx, project, timeSec) {
+// images: peta opsional { imageId: HTMLImageElement } (lihat images.js).
+export function drawProject(ctx, project, timeSec, images) {
   const { scene, local, progress } = sceneAt(project, timeSec);
   ctx.setTransform(1, 0, 0, 1, 0, 0);
   ctx.clearRect(0, 0, W, H);
   applyCamera(ctx, scene.camera || 'static', progress);
-  drawBackground(ctx, Number(scene.bg ?? 220), progress);
+  const photo = scene.img && images ? images[scene.img] || null : null;
+  drawBackground(ctx, Number(scene.bg ?? 220), progress, photo);
   applyTransitionIn(ctx, scene.transition || 'cut', local);
   drawSubtitle(ctx, scene, local, progress);
   // bingkai aman vertikal

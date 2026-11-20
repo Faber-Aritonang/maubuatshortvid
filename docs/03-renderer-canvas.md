@@ -46,6 +46,21 @@ Word-timing: array `{w, t}` per scene (detik relatif). Kata aktif =
 kata terakhir dengan `t <= waktuLokal`. Bila TTS browser tidak memberi timestamp
 (yang umum), `tts.js` mengestimasi merata `durasi/kata`.
 
+## Gambar latar (opsional per scene)
+
+```
+input file -> downscaleImage (maks 720px, JPEG ~0.82) -> putImageBlob(id)
+  -> scene.img = id -> drawBackground: gradasi dulu, lalu drawImage cover
+```
+
+- `drawCoverImage` menggambar menutupi layar (`cover`) dengan margin 160px agar kamera
+  `push/pull` (zoom 1.12x) tidak menyisakan tepi kosong.
+- Tanpa gambar, latar tetap gradasi prosedural + lingkaran/grid seperti sebelumnya.
+- Gambar ikut ke export karena `exportVideo` memakai `drawProject` yang sama dengan
+  peta elemen yang sudah dimuat (`imageReady` ditunggu sebelum encode).
+- Field `scene.img` hanya id string, jadi project JSON tetap ramping; saat export JSON,
+  blob diubah ke data URL di `payload.images` (entri > 2 MB dilewati).
+
 ## Transisi (5)
 
 `cut, fade (alpha), slide (geser x), zoom (scale 0.9->1), wipe (persegi meluas)`.

@@ -79,14 +79,19 @@ Struktur path audio mengikuti policy storage di `schema.sql`
 {
   "version": 1,
   "scenes": [
-    {"text":"Halo, ini scene 1","style":"karaoke","camera":"push","transition":"fade","dur":4,"bg":210}
+    {"text":"Halo, ini scene 1","style":"karaoke","camera":"push","transition":"fade","dur":4,"bg":210,"img":"img-abc123"}
   ],
-  "audio": { "0": "<uid>/<projectId>/scene-1.mp3" }
+  "audio": { "0": "<uid>/<projectId>/scene-1.mp3" },
+  "images": { "0": "<uid>/<projectId>/bg-1.jpg" }
 }
 ```
 
-`audio` hanya berisi scene yang audionya ikut diunggah. Saat project dibuka lagi,
-payload dipakai apa adanya; audio lama akan disintesis ulang oleh tombol "Buat suara TTS".
+- `audio` hanya berisi scene yang audionya ikut diunggah. Saat project dibuka lagi,
+  payload dipakai apa adanya; audio lama akan disintesis ulang oleh tombol "Buat suara TTS".
+- `images` berisi **path storage** (`project-images`, format `<uid>/<projectId>/bg-<N>.jpg`)
+  bila project dari cloud — dibuka lewat signed URL 7 hari — atau **data URL**
+  (`{name, dataUrl}`) bila project dari file JSON. Keduanya dipulihkan ke gambar lokal
+  oleh `restoreImages()` saat project dibuka.
 
 Validasi di klien: `scenes` 1..6 (UI), `dur` 2..15 dtk, `style/camera/transition`
 harus dari daftar di `styles.js`.
