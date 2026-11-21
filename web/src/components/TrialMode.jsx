@@ -94,6 +94,7 @@ export default function TrialMode() {
   const navigate = useNavigate();
   const location = useLocation();
   const projectTitle = location.state?.projectTitle || 'Video pertamaku';
+  const projectId = location.state?.projectId;
 
   useEffect(() => {
     const previousTitle = document.title;
@@ -104,6 +105,10 @@ export default function TrialMode() {
   }, []);
 
   const chooseMode = (mode) => {
+    if (mode === 'idea') {
+      navigate('/app/trial/ide', { state: { projectTitle, projectId } });
+      return;
+    }
     navigate('/studio', { state: { projectTitle, mode } });
   };
 

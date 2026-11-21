@@ -37,7 +37,10 @@ function demoProject() {
   return ensureTiming({ version: 1, scenes });
 }
 
-function starterProject(mode) {
+function starterProject(mode, selectedScenes) {
+  if (Array.isArray(selectedScenes) && selectedScenes.length) {
+    return ensureTiming({ version: 1, scenes: selectedScenes.slice(0, 6) });
+  }
   if (!mode) return demoProject();
   const scenes = [blankScene(0), blankScene(1), blankScene(2)];
 
@@ -75,8 +78,9 @@ function starterProject(mode) {
 
 export default function App() {
   const location = useLocation();
-  const [project, setProject] = useState(() => starterProject(location.state?.mode));
+  const [project, setProject] = useState(() => starterProject(location.state?.mode, location.state?.scenes));
   const [title, setTitle] = useState(() => location.state?.projectTitle || 'Video pertamaku');
+  const [ideaTitle, setIdeaTitle] = useState(() => location.state?.ideaTitle || '');
   const [sel, setSel] = useState(0);
   const [playing, setPlaying] = useState(false);
   const [time, setTime] = useState(0);
@@ -100,10 +104,15 @@ export default function App() {
   const mixRef = useRef(null);
 
   useEffect(() => {
-    if (location.state?.mode) setProject(starterProject(location.state.mode));
+    if (Array.isArray(location.state?.scenes) && location.state.scenes.length) {
+      setProject(starterProject(location.state.mode, location.state.scenes));
+    } else if (location.state?.mode) {
+      setProject(starterProject(location.state.mode));
+    }
     const nextTitle = location.state?.projectTitle;
     if (nextTitle) setTitle(nextTitle);
-  }, [location.key, location.state?.mode, location.state?.projectTitle]);
+    setIdeaTitle(location.state?.ideaTitle || '');
+  }, [location.key, location.state?.mode, location.state?.projectTitle, location.state?.ideaTitle, location.state?.scenes]);
 
   const total = useMemo(() => projectDuration(project), [project]);
   const cur = sceneAt(project, Math.min(time, Math.max(0, total - 0.001)));
@@ -440,7 +449,11 @@ export default function App() {
       <header className="top">
         <div>
           <h1>Satset Motion Studio <span className="tag">v0.2 prototype</span></h1>
-          <p className="sub">Proyek: <strong>{title}</strong> · Naskah → Suara TTS → Subtitle → Animasi → Export MP4. Render 100% di browser.</p>
+          <p className="sub">
+            Proyek: <strong>{title}</strong>
+            {ideaTitle ? <> · Ide: <strong>{ideaTitle}</strong></> : null}
+            {' · '}Naskah → Suara TTS → Subtitle → Animasi → Export MP4. Render 100% di browser.
+          </p>
         </div>
         <div className="topbtn">
           <button onClick={exportJSON}>Simpan JSON</button>

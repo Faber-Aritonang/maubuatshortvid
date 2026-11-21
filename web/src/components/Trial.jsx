@@ -11,6 +11,13 @@ function readTipPreference() {
   }
 }
 
+function newProjectId() {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `p_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
 export default function Trial() {
   const navigate = useNavigate();
   const { displayName } = useTrialIdentity();
@@ -37,7 +44,7 @@ export default function Trial() {
   const handleSubmit = (event) => {
     event.preventDefault();
     const projectTitle = name.trim() || 'Video pertamaku';
-    navigate('/app/trial/mulai', { state: { projectTitle } });
+    navigate('/app/trial/mulai', { state: { projectTitle, projectId: newProjectId() } });
   };
 
   return (
