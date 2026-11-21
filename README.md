@@ -6,8 +6,37 @@ aplikasi sejenis, **bukan salinan** SatsetMotion atau aset/kode milik pihak lain
 Alur: **Naskah → Suara TTS sungguhan → Subtitle kata-per-kata → Animasi Canvas → Export MP4** —
 render dan encode 100% di browser, tanpa antre render di server.
 
-> Status: prototype v0.2. TTS nyata, export MP4 (H.264 + audio) dan WebM, plus simpan ke Supabase (opsional).
-> Lihat `docs/` untuk desain, `web/` untuk aplikasi, `server/` untuk proxy TTS, `supabase/` untuk skema database.
+> Status: prototype v0.3. Perbaikan bug kritikal (aturan hooks, komponen async, impor yang hilang)
+> diselesaikan. Lihat `docs/` untuk desain, `web/` untuk aplikasi, `server/` untuk proxy TTS,
+> `supabase/` untuk skema database.
+
+## Contributors
+
+- **Claude Code** (Anthropic) — review code, perbaikan bug, dan penulisan ulang komponen.
+
+## Perbaikan v0.3 (bug fix)
+
+| File | Masalah | Solusi |
+|---|---|---|
+| `store/index.js` | `demoProject` diimpor dari `App.jsx` (tidak ada) | Buat `lib/projectTemplates.js`, impor dari sana |
+| `hooks/useProjects.js` | `blankScene` & `ensureTiming` diimpor dari `App.jsx` (tidak ada) | `blankScene` dari `lib/projectTemplates.js`, `ensureTiming` dari `tts.js` |
+| `hooks/useProjects.js` | Selector non-reactive via `getState()` | Gunakan selector pada state yang di-destructure |
+| `components/Pricing.jsx` | `navigate` diimpor dari auth store (tidak ada) | Gunakan `useNavigate()` dari React Router |
+| `components/Pricing.jsx` | `Math.random()` sebagai `key` di `.map()` | Gunakan `plan.id` |
+| `components/Affiliate.jsx` | `export async function AffiliatePage()` — komponen async (crash) | Hapus `async`, pindahkan async ke `useEffect` |
+| `components/Admin.jsx` | `export async function AdminPage()` — komponen async (crash) | Hapus `async`, pindahkan async ke `useEffect` |
+| `components/Auth.jsx` | `useSupabaseAuth()` dipanggil di dalam event handler | Pindahkan ke atas component |
+| `components/Auth.jsx` | Impor duplikat di akhir file | Hapus |
+| `components/Editor.jsx` | `setPlaying` digunakan tanpa di-destructure | Tambahkan `setPlaying` ke `usePlayback()` |
+| `components/Editor.jsx` | `previewVoice()` & `handleImport()` memanggil hooks di dalam handler | Pindahkan ke atas component |
+| `components/Editor.jsx` | Impor di tengah file | Pindahkan ke atas file |
+| `components/Editor.jsx` | `canvasRef` tidak pernah diikat ke `<canvas>` | Gunakan `canvasRef` dari `useCanvas()` |
+| `components/Editor.jsx` | useEffect tak perlu (copy ref, override export ref) | Hapus |
+| `components/Settings.jsx` | `getState()` di onChange handler | Gunakan destructured `savePreferences` |
+| `components/Settings.jsx` | `await import()` di dalam handler | Gunakan import statis |
+| `hooks/useEditor.js` | `useEffect` re-subscribe setiap frame (dep `currentTime`) | Hapus `currentTime` dari deps |
+| `hooks/useEditor.js` | `ttsPlaying` dari `getState()` (non-reactive) | Destructure dari store |
+| `hooks/useAuth.js` | Impor di tengah file | Pindahkan ke atas file |
 
 ## Mulai cepat
 
