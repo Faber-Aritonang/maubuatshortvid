@@ -8,6 +8,7 @@ import Landing from './components/Landing.jsx';
 import Trial from './components/Trial.jsx';
 import TrialMode from './components/TrialMode.jsx';
 import TrialIdea from './components/TrialIdea.jsx';
+import TrialNarration from './components/TrialNarration.jsx';
 import LegacyEditor from './LegacyEditor.jsx';
 import { LoginForm, RegisterForm, ProfilePage, ProtectedRoute } from './components/Auth.jsx';
 import { PricingPage } from './components/Pricing.jsx';
@@ -27,6 +28,7 @@ export default function App() {
         <Route path="/app/trial" element={<Trial />} />
         <Route path="/app/trial/mulai" element={<TrialMode />} />
         <Route path="/app/trial/ide" element={<TrialIdea />} />
+        <Route path="/app/trial/narasi" element={<TrialNarration />} />
         <Route path="/studio" element={<LegacyEditor />} />
         <Route path="/editor" element={<EditorLayout />} />
         <Route path="/login" element={<LoginForm />} />

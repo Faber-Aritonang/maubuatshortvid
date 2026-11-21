@@ -364,6 +364,17 @@ export function parseIdeaAnswer(text, { duration = 30, style = 'auto' } = {}) {
     .filter(Boolean);
 }
 
+export function scenesFromNarration(text, { duration = 30, style = 'auto' } = {}) {
+  const lines = String(text || '')
+    .split(/\n+|(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter(Boolean);
+  return {
+    scenes: makeScenes(lines, { duration, style, seed: 0 }),
+    total: lines.length,
+  };
+}
+
 export function projectStats(project) {
   const scenes = Array.isArray(project?.scenes) ? project.scenes : [];
   return {

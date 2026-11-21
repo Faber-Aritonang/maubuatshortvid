@@ -109,6 +109,10 @@ export default function TrialMode() {
       navigate('/app/trial/ide', { state: { projectTitle, projectId } });
       return;
     }
+    if (mode === 'narasi') {
+      navigate('/app/trial/narasi', { state: { projectTitle, projectId } });
+      return;
+    }
     navigate('/studio', { state: { projectTitle, mode } });
   };
 
