@@ -37,9 +37,45 @@ function demoProject() {
   return ensureTiming({ version: 1, scenes });
 }
 
+function starterProject(mode) {
+  if (!mode) return demoProject();
+  const scenes = [blankScene(0), blankScene(1), blankScene(2)];
+
+  if (mode === 'idea') {
+    scenes[0].text = 'Tulis topik kamu di sini. Contoh: disiplin pagi.';
+    scenes[0].style = 'karaoke';
+    scenes[1].text = 'Kembangkan jadi satu kalimat yang bisa langsung dibaca.';
+    scenes[1].style = 'kotak';
+    scenes[1].camera = 'pan-r';
+    scenes[2].text = 'Tutup dengan inti yang ingin diingat.';
+    scenes[2].style = 'neon';
+    scenes[2].camera = 'pull';
+  } else if (mode === 'narasi') {
+    scenes[0].text = 'Tempel narasi kamu di sini.';
+    scenes[0].style = 'kotak';
+    scenes[1].text = 'Pecah jadi bagian pendek, satu ide per scene.';
+    scenes[1].style = 'karaoke';
+    scenes[1].camera = 'push';
+    scenes[2].text = 'Tutup dengan kalimat yang ingin diingat.';
+    scenes[2].style = 'stiker';
+    scenes[2].camera = 'pan-l';
+  } else if (mode === 'promosi') {
+    scenes[0].text = 'Promosi produk: tulis nama produk dan kelebihannya.';
+    scenes[0].style = 'kotak';
+    scenes[1].text = 'Tunjukkan manfaat utama atau foto produknya.';
+    scenes[1].style = 'karaoke';
+    scenes[1].camera = 'push';
+    scenes[2].text = 'Tutup dengan harga, kontak, atau ajakan beli.';
+    scenes[2].style = 'stiker';
+    scenes[2].camera = 'pan-r';
+  }
+
+  return ensureTiming({ version: 1, scenes });
+}
+
 export default function App() {
   const location = useLocation();
-  const [project, setProject] = useState(demoProject);
+  const [project, setProject] = useState(() => starterProject(location.state?.mode));
   const [title, setTitle] = useState(() => location.state?.projectTitle || 'Video pertamaku');
   const [sel, setSel] = useState(0);
   const [playing, setPlaying] = useState(false);
@@ -64,9 +100,10 @@ export default function App() {
   const mixRef = useRef(null);
 
   useEffect(() => {
+    if (location.state?.mode) setProject(starterProject(location.state.mode));
     const nextTitle = location.state?.projectTitle;
     if (nextTitle) setTitle(nextTitle);
-  }, [location.key, location.state?.projectTitle]);
+  }, [location.key, location.state?.mode, location.state?.projectTitle]);
 
   const total = useMemo(() => projectDuration(project), [project]);
   const cur = sceneAt(project, Math.min(time, Math.max(0, total - 0.001)));

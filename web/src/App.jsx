@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { useAuthInit } from './hooks/useAuth.js';
 import Landing from './components/Landing.jsx';
 import Trial from './components/Trial.jsx';
+import TrialMode from './components/TrialMode.jsx';
 import LegacyEditor from './LegacyEditor.jsx';
 import { LoginForm, RegisterForm, ProfilePage, ProtectedRoute } from './components/Auth.jsx';
 import { PricingPage } from './components/Pricing.jsx';
@@ -23,6 +24,7 @@ export default function App() {
         <Route path="/" element={<Landing />} />
         <Route path="/app" element={<Navigate to="/app/trial" replace />} />
         <Route path="/app/trial" element={<Trial />} />
+        <Route path="/app/trial/mulai" element={<TrialMode />} />
         <Route path="/studio" element={<LegacyEditor />} />
         <Route path="/editor" element={<EditorLayout />} />
         <Route path="/login" element={<LoginForm />} />
