@@ -11,6 +11,7 @@ import {
   downloadProjectJson,
   formatDuration,
   generateIdeas,
+  createIdeaFromLines,
   loadIdeaCurrentId,
   loadIdeaProjects,
   newId,
@@ -327,19 +328,47 @@ export default function TrialIdea() {
       )
     : projects;
 
-  const handleGenerate = () => {
-    const next = generateIdeas({ topic, duration, note, style, seed: generation });
-    setIdeas(next);
-    setGeneration((value) => value + 1);
-    setStatus(
-      topic.trim()
-        ? `${next.length} ide siap. Pilih satu untuk masuk studio.`
-        : `${next.length} ide bebas siap. Isi topik kalau mau lebih spesifik.`,
-    );
-    if (typeof window !== 'undefined' && window.innerWidth <= 980) {
-      window.setTimeout(() => {
-        resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 80);
+  const handleGenerate = async () => {
+    const showResults = () => {
+      if (typeof window !== 'undefined' && window.innerWidth <= 980) {
+        window.setTimeout(() => {
+          resultsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 80);
+      }
+    };
+
+    setStatus('Membuat ide dengan AI...');
+    try {
+      const res = await fetch('/api/ideas', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ topic, duration, note }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !Array.isArray(data.ideas) || !data.ideas.length) {
+        throw new Error(data.error || 'AI tidak tersedia.');
+      }
+      const next = data.ideas.map((idea) => createIdeaFromLines(idea.title, idea.desc, idea.lines, {
+        duration,
+        style,
+        seed: generation,
+        tag: idea.tag,
+      })).filter(Boolean);
+      if (!next.length) throw new Error('Ide AI kosong.');
+      setIdeas(next);
+      setGeneration((value) => value + 1);
+      setStatus(`${next.length} ide dari AI siap. Pilih satu untuk masuk studio.`);
+      showResults();
+      return;
+    } catch (error) {
+      // Server LLM belum siap: pakai engine lokal supaya alur tetap jalan.
+      const next = generateIdeas({ topic, duration, note, style, seed: generation });
+      setIdeas(next);
+      setGeneration((value) => value + 1);
+      setStatus(
+        `AI belum bisa dipakai (${error.message}). Memakai ide lokal: ${next.length} ide siap.`,
+      );
+      showResults();
     }
   };
 

@@ -234,7 +234,7 @@ function makeScenes(lines, { duration, style, seed }) {
   }));
 }
 
-function createIdeaFromLines(title, desc, lines, { duration, style, seed, tag }) {
+export function createIdeaFromLines(title, desc, lines, { duration, style, seed, tag }) {
   const scenes = makeScenes(lines, { duration, style, seed });
   if (!scenes.length) return null;
 

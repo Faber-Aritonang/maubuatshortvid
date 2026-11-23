@@ -110,6 +110,88 @@ class HttpError extends Error {
 
 const synth = { openai: openaiSpeech, elevenlabs: elevenSpeech };
 
+// ---------- LLM (ide dari topik) ----------
+
+function pickLlmProvider() {
+  const forced = (process.env.LLM_PROVIDER || '').toLowerCase();
+  if (forced === 'anthropic' || forced === 'deepseek' || forced === 'none') return forced;
+  if (process.env.ANTHROPIC_API_KEY) return 'anthropic';
+  if (process.env.DEEPSEEK_API_KEY) return 'deepseek';
+  return 'none';
+}
+
+function buildIdeaPrompt({ topic, duration, count, note }) {
+  return [
+    'Buat 4 ide video pendek dalam Bahasa Indonesia.',
+    `Topik: ${topic || '(bebas, pilih topik menarik)'}`,
+    `Durasi total: sekitar ${duration} detik. Setiap ide punya tepat ${count} kalimat narasi (scene).`,
+    note ? `Kalimat penutup yang wajib dipakai sebagai scene terakhir: "${note}"` : '',
+    'Balas HANYA dengan JSON valid, bentuk: {"ideas":[{"title":"...","desc":"...","tag":"...","lines":["...", "..."]}]}',
+    'title: judul singkat (maks 60 karakter). desc: satu kalimat ringkas. tag: satu kata kategori. lines: narasi per scene, tiap kalimat maks 140 karakter, tanpa emoji.',
+  ].filter(Boolean).join('\n');
+}
+
+async function callLlm(prompt) {
+  const provider = pickLlmProvider();
+  if (provider === 'anthropic') {
+    const model = process.env.ANTHROPIC_MODEL || 'claude-haiku-4-5';
+    const base = (process.env.ANTHROPIC_BASE_URL || 'https://api.anthropic.com').replace(/\/+$/, '');
+    const url = /^https?:\/\//.test(base) ? base : `https://${base}`;
+    const res = await fetch(`${url}/v1/messages`, {
+      method: 'POST',
+      headers: {
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ model, max_tokens: 2000, messages: [{ role: 'user', content: prompt }] }),
+    });
+    if (!res.ok) throw new HttpError(502, `Anthropic gagal (${res.status}): ${(await res.text().catch(() => '')).slice(0, 300)}`);
+    const data = await res.json();
+    return data.content?.find((part) => part.type === 'text')?.text || '';
+  }
+  if (provider === 'deepseek') {
+    const model = process.env.DEEPSEEK_MODEL || 'deepseek-v4-flash';
+    const base = (process.env.DEEPSEEK_BASE_URL || 'https://api.deepseek.com').replace(/\/$/, '');
+    const res = await fetch(`${base}/chat/completions`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${process.env.DEEPSEEK_API_KEY}`, 'content-type': 'application/json' },
+      body: JSON.stringify({
+        model,
+        messages: [{ role: 'user', content: prompt }],
+        response_format: { type: 'json_object' },
+        max_tokens: 2000,
+      }),
+    });
+    if (!res.ok) throw new HttpError(502, `DeepSeek gagal (${res.status}): ${(await res.text().catch(() => '')).slice(0, 300)}`);
+    const data = await res.json();
+    return data.choices?.[0]?.message?.content || '';
+  }
+  throw new HttpError(501, 'LLM belum dikonfigurasi di server. Set ANTHROPIC_API_KEY atau DEEPSEEK_API_KEY.');
+}
+
+function parseIdeaJson(text) {
+  const match = String(text).match(/\{[\s\S]*\}/);
+  if (!match) throw new HttpError(502, 'Jawaban LLM tidak berisi JSON.');
+  let data;
+  try { data = JSON.parse(match[0]); } catch { throw new HttpError(502, 'JSON dari LLM tidak valid.'); }
+  const list = Array.isArray(data.ideas) ? data.ideas : [];
+  const ideas = list
+    .map((item) => ({
+      title: String(item?.title || '').slice(0, 90),
+      desc: String(item?.desc || '').slice(0, 180),
+      tag: String(item?.tag || '').slice(0, 24),
+      lines: (Array.isArray(item?.lines) ? item.lines : [])
+        .map((line) => String(line || '').replace(/\s+/g, ' ').trim().slice(0, 140))
+        .filter(Boolean)
+        .slice(0, 6),
+    }))
+    .filter((item) => item.title && item.lines.length > 0)
+    .slice(0, 4);
+  if (!ideas.length) throw new HttpError(502, 'LLM tidak menghasilkan ide yang bisa dipakai.');
+  return ideas;
+}
+
 // ---------- util HTTP ----------
 
 function json(res, status, data) {
@@ -169,6 +251,19 @@ const server = http.createServer(async (req, res) => {
   if (url.pathname === '/api/health') {
     const info = providerInfo();
     return json(res, 200, { ok: true, tts: info });
+  }
+
+  if (url.pathname === '/api/ideas') {
+    if (req.method !== 'POST') return json(res, 405, { error: 'Gunakan POST.' });
+    try {
+      const { topic = '', duration = 30, note = '' } = await readJson(req);
+      const target = clamp(Number(duration) || 30, 5, 90);
+      const count = clamp(Math.round(target / 7), 3, 6);
+      const text = await callLlm(buildIdeaPrompt({ topic: String(topic).slice(0, 200), duration: target, count, note: String(note).slice(0, 160) }));
+      return json(res, 200, { ideas: parseIdeaJson(text), provider: pickLlmProvider() });
+    } catch (e) {
+      return json(res, e.status || 500, { error: e.message || 'Gagal membuat ide.' });
+    }
   }
 
   if (url.pathname === '/api/tts') {
