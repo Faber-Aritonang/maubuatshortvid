@@ -245,6 +245,9 @@ fieldset.field legend { font-size: 13px; color: var(--mut); font-weight: 500; pa
   display: flex;
   align-items: center;
   gap: 10px;
+  width: 100%;
+  text-align: left;
+  font: inherit;
   padding: 10px;
   background: #12141e;
   border: 1px solid var(--line);

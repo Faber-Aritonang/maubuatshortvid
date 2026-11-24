@@ -62,6 +62,79 @@ function providerInfo() {
   return { provider: 'none', ready: false, voices: [], defaultVoice: '' };
 }
 
+// ---------- validasi kunci untuk /api/health ----------
+
+const HEALTH_TTL_MS = 60_000;
+let healthCache = { at: 0, value: null };
+
+async function validateProvider(provider) {
+  const timeout = AbortSignal.timeout(8000);
+  if (provider === 'openai') {
+    const base = (process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1').replace(/\/$/, '');
+    const res = await fetch(`${base}/models`, {
+      headers: { authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+      signal: timeout,
+    });
+    if (!res.ok) throw new Error(`OpenAI menolak kunci (${res.status}).`);
+    return;
+  }
+  if (provider === 'elevenlabs') {
+    // Kunci ElevenLabs sering dibatasi ke izin text-to-speech saja, jadi
+    // /v1/user bisa 401 walau TTS-nya jalan. Uji dengan synth satu huruf.
+    const voiceId = process.env.ELEVENLABS_VOICE_ID;
+    if (!voiceId) throw new Error('ELEVENLABS_VOICE_ID belum diisi.');
+    const res = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`,
+      {
+        method: 'POST',
+        headers: { 'xi-api-key': process.env.ELEVENLABS_API_KEY, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          text: 'a',
+          model_id: process.env.ELEVENLABS_MODEL || 'eleven_multilingual_v2',
+        }),
+        signal: timeout,
+      },
+    );
+    if (res.status === 429) {
+      // Kunci lolos autentikasi, hanya sedang kena batas layanan.
+      try { await res.body?.cancel(); } catch { /* abaikan */ }
+      return;
+    }
+    if (!res.ok) throw new Error(`ElevenLabs menolak kunci (${res.status}).`);
+    try { await res.body?.cancel(); } catch { /* abaikan */ }
+  }
+}
+
+// providerInfo() hanya tahu kunci ada atau tidak. Fungsi ini menanyakan ke
+// penyedia apakah kuncinya benar-benar diterima, lalu menyimpan hasilnya sebentar
+// supaya setiap page load tidak memanggil API eksternal.
+async function checkedProviderInfo() {
+  if (healthCache.value && Date.now() - healthCache.at < HEALTH_TTL_MS) {
+    return healthCache.value;
+  }
+  const info = providerInfo();
+  let value;
+  if (info.provider === 'none' || !info.ready) {
+    value = {
+      ...info,
+      ready: false,
+      verified: true,
+      error: info.provider === 'none'
+        ? 'Belum ada kunci TTS di server.'
+        : 'Suara atau kunci penyedia belum lengkap.',
+    };
+  } else {
+    try {
+      await validateProvider(info.provider);
+      value = { ...info, ready: true, verified: true };
+    } catch (e) {
+      value = { ...info, ready: false, verified: true, error: e.message };
+    }
+  }
+  healthCache = { at: Date.now(), value };
+  return value;
+}
+
 const clamp = (n, lo, hi) => Math.max(lo, Math.min(hi, Number.isFinite(n) ? n : lo));
 
 async function openaiSpeech({ text, voice, speed }) {
@@ -249,7 +322,7 @@ const server = http.createServer(async (req, res) => {
   const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
 
   if (url.pathname === '/api/health') {
-    const info = providerInfo();
+    const info = await checkedProviderInfo();
     return json(res, 200, { ok: true, tts: info });
   }
 

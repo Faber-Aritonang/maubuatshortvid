@@ -204,25 +204,6 @@ export default function TrialNarration() {
         <aside className="idea-sidebar" aria-label="Narasi sendiri">
           <div className="idea-form-body">
             <div className="idea-field">
-              <label className="idea-field-label" htmlFor="narasi-start">Mulai dari</label>
-              <select id="narasi-start" className="idea-input" defaultValue="narasi">
-                <option value="narasi">Pakai narasi sendiri</option>
-              </select>
-            </div>
-            <div className="idea-field">
-              <label className="idea-field-label" htmlFor="narasi-lang">Bahasa</label>
-              <select id="narasi-lang" className="idea-input" defaultValue="id">
-                <option value="id">🇮🇩 Bahasa Indonesia</option>
-              </select>
-            </div>
-            <div className="idea-field">
-              <label className="idea-field-label" htmlFor="narasi-kind">Jenis konten</label>
-              <select id="narasi-kind" className="idea-input" defaultValue="auto">
-                <option value="auto">✨ Otomatis</option>
-              </select>
-            </div>
-
-            <div className="idea-field">
               <div className="idea-field-head">
                 <label className="idea-field-label" htmlFor="narasi-text">
                   Narasi / cerita kamu
@@ -307,8 +288,8 @@ export default function TrialNarration() {
             {scenes.length === 0 ? (
               <div className="idea-empty">
                 <div>
-                  <h2>Tanpa pilih ide</h2>
-                  <p>Narasimu langsung dipecah jadi scene, lalu muncul di langkah 2.</p>
+                  <h2>Belum ada scene</h2>
+                  <p>Tulis narasi di panel kiri, lalu klik Pecah jadi scene.</p>
                 </div>
               </div>
             ) : (

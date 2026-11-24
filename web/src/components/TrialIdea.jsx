@@ -747,7 +747,7 @@ export default function TrialIdea() {
                 </button>
               </div>
               <p className="idea-actions-note">
-                Ide disusun lokal. Untuk AI, salin prompt lalu tempel jawabannya.
+                Coba AI server dulu. Jika tidak tersedia, ide dibuat secara lokal.
               </p>
             </div>
           </form>

@@ -36,7 +36,7 @@ export function demoProject() {
       },
       {
         id: 'sc_demo_1',
-        text: 'Buat video pendek dari naskah dalam hitungan menit.',
+        text: 'Buat video pendek dari ide dalam hitungan menit.',
         style: 'karaoke',
         camera: 'push',
         transition: 'slide',
@@ -45,7 +45,7 @@ export function demoProject() {
       },
       {
         id: 'sc_demo_2',
-        text: 'Naskah → Suara → Subtitle → Animasi → Export.',
+        text: 'Ide → Naskah → Suara → Subtitle → Animasi → Export.',
         style: 'neon',
         camera: 'pull',
         transition: 'zoom',

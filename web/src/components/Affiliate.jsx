@@ -136,7 +136,7 @@ export function AffiliatePage() {
         </div>
         <div className="header-actions">
           <button className="btn secondary" onClick={handleCopyLink}>
-            📋 Salin Link Referral
+            Salin Link Referral
           </button>
         </div>
       </header>
@@ -258,13 +258,13 @@ function SalesTab({ sales }) {
                 <tr key={sale.id}>
                   <td>{new Date(sale.created_at).toLocaleDateString('id-ID')}</td>
                   <td>
-                    <div>{sale.profiles?.display_name || '—'}</div>
+                    <div>{sale.profiles?.display_name || '-'}</div>
                     <small>{sale.profiles?.email}</small>
                   </td>
                   <td>{sale.plan_id}</td>
                   <td>Rp {(sale.amount / 100).toLocaleString('id-ID')}</td>
                   <td>Rp {(sale.commission_amount || 0).toLocaleString('id-ID')}</td>
-                  <td>{sale.promos?.code || '—'}</td>
+                  <td>{sale.promos?.code || '-'}</td>
                   <td><span className={`badge ${sale.status}`}>{sale.status}</span></td>
                 </tr>
               ))}
@@ -303,7 +303,7 @@ function PromosTab({ promoUsages }) {
                 <tr key={usage.id}>
                   <td>{new Date(usage.used_at).toLocaleDateString('id-ID')}</td>
                   <td>
-                    <div>{usage.profiles?.display_name || '—'}</div>
+                    <div>{usage.profiles?.display_name || '-'}</div>
                     <small>{usage.profiles?.email}</small>
                   </td>
                   <td><code>{usage.promos?.code}</code></td>
@@ -348,9 +348,9 @@ function PayoutsTab({ payouts }) {
                   <td>{new Date(payout.created_at).toLocaleDateString('id-ID')}</td>
                   <td>{payout.period_start} - {payout.period_end}</td>
                   <td>Rp {(payout.amount || 0).toLocaleString('id-ID')}</td>
-                  <td>{payout.method || '—'}</td>
+                  <td>{payout.method || '-'}</td>
                   <td><span className={`badge ${payout.status}`}>{payout.status}</span></td>
-                  <td>{payout.notes || '—'}</td>
+                  <td>{payout.notes || '-'}</td>
                 </tr>
               ))}
             </tbody>
@@ -388,7 +388,7 @@ function LinkTab({ affiliate }) {
               setTimeout(() => setCopied(false), 2000);
             }}
           >
-            {copied ? '✓ Disalin!' : '📋 Salin'}
+            {copied ? 'Tersalin' : 'Salin'}
           </button>
         </div>
 

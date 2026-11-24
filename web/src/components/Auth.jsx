@@ -5,7 +5,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useAuth, useSupabaseAuth } from '../hooks/useAuth.js';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 
 /**
  * Login Form
@@ -88,8 +88,7 @@ export function LoginForm() {
       </form>
 
       <div className="auth-links">
-        <p>Belum punya akun? <a href="/register">Daftar</a></p>
-        <p><a href="/forgot-password">Lupa kata sandi?</a></p>
+        <p>Belum punya akun? <Link to="/register">Daftar</Link></p>
       </div>
     </div>
   );
@@ -218,7 +217,7 @@ export function RegisterForm() {
       </form>
 
       <div className="auth-links">
-        <p>Sudah punya akun? <a href="/login">Masuk</a></p>
+        <p>Sudah punya akun? <Link to="/login">Masuk</Link></p>
       </div>
     </div>
   );
@@ -311,7 +310,7 @@ export function ProfilePage() {
   };
 
   if (loading) return <div className="loading">Memuat...</div>;
-  if (!profile) return <div className="auth-card">Silakan <a href="/login">masuk</a> terlebih dahulu.</div>;
+  if (!profile) return <div className="auth-card">Silakan <Link to="/login">masuk</Link> terlebih dahulu.</div>;
 
   return (
     <div className="profile-page">

@@ -3,8 +3,8 @@
  * Main video creation interface
  */
 
-import React, { useRef, useEffect, useCallback, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useCurrentProject } from '../hooks/useProjects.js';
 import { useCanvas, usePlayback, useTTS, useExport } from '../hooks/useEditor.js';
 import { STYLES, CAMERAS, TRANSITIONS } from '../styles.js';
@@ -15,29 +15,39 @@ import { useAuth } from '../hooks/useAuth.js';
  * Canvas Stage - Main preview area
  */
 export function CanvasStage() {
-  const { canvasRef, render } = useCanvas();
-  const { playing, currentTime, totalDuration, progress, restart, seek, changeRate } = usePlayback();
-  const { exportVideo, exportJSON, importing, canvasRef: exportCanvasRef, exportProgress, exporting } = useExport();
-  const { scene, duration } = useCurrentProject();
+  const { canvasRef } = useCanvas();
+  const { playing, currentTime, totalDuration, restart, seek, toggle } = usePlayback();
+  const {
+    exportVideo,
+    exportJSON,
+    importJSON,
+    canvasRef: exportCanvasRef,
+    exportProgress,
+    exporting,
+  } = useExport();
+  const { duration, newProject } = useCurrentProject();
+  const { speak } = useTTS();
 
-  // Use same canvas ref for both preview and export
-  const canvas = useRef(null);
+  // Preview and export draw on the same canvas, so both hook refs point at the
+  // element that is actually rendered.
+  const setCanvasNode = (node) => {
+    canvasRef.current = node;
+    exportCanvasRef.current = node;
+  };
 
-  useEffect(() => {
-    if (canvasRef.current) {
-      canvas.current = canvasRef.current;
-    }
-  }, [canvasRef]);
-
-  // Override export's canvasRef
-  useEffect(() => {
-    // The export hook uses its own ref, but we can share
-  }, []);
+  const handleImport = (event) => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    importJSON(file)
+      .then((project) => newProject(project))
+      .catch(() => window.alert('Gagal membuka file JSON.'));
+    event.target.value = '';
+  };
 
   return (
     <section className="stage">
       <canvas
-        ref={canvasRef}
+        ref={setCanvasNode}
         width={720}
         height={1280}
         className="canvas"
@@ -45,13 +55,13 @@ export function CanvasStage() {
 
       <div className="transport">
         <button onClick={restart} className="btn" title="Ulangi dari awal">
-          ⏮ Ulangi
+          Ulangi
         </button>
-        <button onClick={() => playing ? setPlaying(false) : setPlaying(true)} className="btn primary">
-          {playing ? '⏸ Jeda' : '▶ Putar'}
+        <button onClick={toggle} className="btn primary">
+          {playing ? 'Jeda' : 'Putar'}
         </button>
-        <button onClick={previewVoice} className="btn" title="Dengarkan suara (TTS browser)">
-          🔊 Suara
+        <button onClick={speak} className="btn" title="Dengarkan suara (TTS browser)">
+          Suara
         </button>
         <span className="time-display">
           {currentTime.toFixed(1)}s / {totalDuration.toFixed(1)}s
@@ -75,13 +85,13 @@ export function CanvasStage() {
           disabled={exporting || !duration}
           className="btn export-btn"
         >
-          {exporting ? `Merekam ${Math.round(exportProgress * 100)}%…` : '📹 Export Video (.webm)'}
+          {exporting ? `Merekam ${Math.round(exportProgress * 100)}%…` : 'Export Video (.webm)'}
         </button>
         <button onClick={exportJSON} className="btn secondary" title="Simpan proyek sebagai JSON">
-          💾 Simpan JSON
+          Simpan JSON
         </button>
         <label className="btn secondary file-input">
-          📂 Buka JSON
+          Buka JSON
           <input
             type="file"
             accept=".json"
@@ -122,10 +132,12 @@ export function SceneList() {
 
       <div className="scenes">
         {project?.scenes?.map((sc, i) => (
-          <div
+          <button
+            type="button"
             key={i}
             className={`scene-item ${i === selectedSceneIndex ? 'active' : ''}`}
             onClick={() => setScene(i)}
+            aria-current={i === selectedSceneIndex ? 'true' : undefined}
             draggable
             onDragStart={(e) => { e.dataTransfer.setData('text/plain', i); }}
             onDragOver={(e) => e.preventDefault()}
@@ -143,7 +155,7 @@ export function SceneList() {
             <span className="scene-meta">
               {sc.style} · {sc.dur}s
             </span>
-          </div>
+          </button>
         ))}
       </div>
 
@@ -174,8 +186,9 @@ export function SceneControls() {
       <h3>Scene {sceneIndex + 1}</h3>
 
       <div className="field">
-        <label>Naskah</label>
+        <label htmlFor="scene-text">Naskah</label>
         <textarea
+          id="scene-text"
           value={scene.text || ''}
           rows={3}
           onChange={(e) => updateScene({ text: e.target.value })}
@@ -185,8 +198,9 @@ export function SceneControls() {
 
       <div className="controls-grid">
         <div className="field">
-          <label>Gaya Subtitle</label>
+          <label htmlFor="scene-style">Gaya Subtitle</label>
           <select
+            id="scene-style"
             value={scene.style}
             onChange={(e) => updateScene({ style: e.target.value })}
           >
@@ -197,8 +211,9 @@ export function SceneControls() {
         </div>
 
         <div className="field">
-          <label>Kamera</label>
+          <label htmlFor="scene-camera">Kamera</label>
           <select
+            id="scene-camera"
             value={scene.camera}
             onChange={(e) => updateScene({ camera: e.target.value })}
           >
@@ -209,8 +224,9 @@ export function SceneControls() {
         </div>
 
         <div className="field">
-          <label>Transisi</label>
+          <label htmlFor="scene-transition">Transisi</label>
           <select
+            id="scene-transition"
             value={scene.transition}
             onChange={(e) => updateScene({ transition: e.target.value })}
           >
@@ -223,8 +239,9 @@ export function SceneControls() {
 
       <div className="controls-grid">
         <div className="field">
-          <label>Durasi (detik)</label>
+          <label htmlFor="scene-dur">Durasi (detik)</label>
           <input
+            id="scene-dur"
             type="number"
             min="2"
             max="15"
@@ -234,8 +251,9 @@ export function SceneControls() {
         </div>
 
         <div className="field">
-          <label>Warna Latar (Hue 0-360)</label>
+          <label htmlFor="scene-bg">Warna Latar (Hue 0-360)</label>
           <input
+            id="scene-bg"
             type="range"
             min="0"
             max="360"
@@ -246,8 +264,9 @@ export function SceneControls() {
         </div>
 
         <div className="field">
-          <label>Kecepatan Suara</label>
+          <label htmlFor="scene-rate">Kecepatan Suara</label>
           <input
+            id="scene-rate"
             type="range"
             min="0.7"
             max="1.3"
@@ -287,7 +306,7 @@ export function EditorLayout() {
       <header className="editor-header">
         <div className="title-area">
           <h1>MauBuatShortVid</h1>
-          <p className="subtitle">Naskah → Suara → Subtitle → Animasi → Export</p>
+          <p className="subtitle">Ide → Naskah → Suara → Subtitle → Animasi → Export</p>
         </div>
         <div className="header-actions">
           <ProjectSelector />
@@ -316,8 +335,13 @@ function ProjectSelector() {
 
   return (
     <div className="dropdown" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button className="btn secondary dropdown-toggle" onClick={() => setOpen(!open)}>
-        📁 {currentProjectId ? 'Proyek Aktif' : 'Pilih Proyek'} ▼
+      <button
+        type="button"
+        className="btn secondary dropdown-toggle"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+      >
+        {currentProjectId ? 'Proyek Aktif' : 'Pilih Proyek'}
       </button>
       {open && (
         <div className="dropdown-menu">
@@ -335,7 +359,7 @@ function ProjectSelector() {
             + Proyek Baru
           </button>
           <button className="dropdown-item" onClick={loadProjects}>
-            🔄 Muat Ulang
+            Muat Ulang
           </button>
         </div>
       )}
@@ -360,21 +384,26 @@ function UserMenu() {
   if (!user) {
     return (
       <div className="dropdown">
-        <a href="/login" className="btn secondary">Masuk</a>
-        <a href="/register" className="btn primary">Daftar</a>
+        <Link to="/login" className="btn secondary">Masuk</Link>
+        <Link to="/register" className="btn primary">Daftar</Link>
       </div>
     );
   }
 
   return (
     <div className="dropdown" onMouseEnter={() => setOpen(true)} onMouseLeave={() => setOpen(false)}>
-      <button className="btn secondary dropdown-toggle" onClick={() => setOpen(!open)}>
+      <button
+        type="button"
+        className="btn secondary dropdown-toggle"
+        onClick={() => setOpen(!open)}
+        aria-expanded={open}
+      >
         {profile?.avatar_url ? (
           <img src={profile.avatar_url} alt="" className="avatar-sm" />
         ) : (
           <span className="avatar-sm">{profile?.display_name?.[0]?.toUpperCase() || 'U'}</span>
         )}
-        {profile?.display_name || user?.email?.split('@')[0]} ▼
+        {profile?.display_name || user?.email?.split('@')[0]}
       </button>
       {open && (
         <div className="dropdown-menu user-menu">
@@ -386,49 +415,23 @@ function UserMenu() {
             </span>
           </div>
           <hr />
-          <a href="/profile" className="dropdown-item" onClick={() => setOpen(false)}>
-            👤 Profil
-          </a>
-          <a href="/settings" className="dropdown-item" onClick={() => setOpen(false)}>
-            ⚙️ Pengaturan
-          </a>
+          <Link to="/profile" className="dropdown-item" onClick={() => setOpen(false)}>
+            Profil
+          </Link>
+          <Link to="/settings" className="dropdown-item" onClick={() => setOpen(false)}>
+            Pengaturan
+          </Link>
           {plan?.id !== 'agency' && (
-            <a href="/pricing" className="dropdown-item" onClick={() => setOpen(false)}>
-              💎 Upgrade
-            </a>
+            <Link to="/pricing" className="dropdown-item" onClick={() => setOpen(false)}>
+              Upgrade
+            </Link>
           )}
           <hr />
           <button className="dropdown-item danger" onClick={handleSignOut}>
-            🚪 Keluar
+            Keluar
           </button>
         </div>
       )}
     </div>
   );
-}
-
-/**
- * Preview Voice Button Handler
- */
-function previewVoice() {
-  const { speak } = useTTS();
-  speak();
-}
-
-
-/**
- * Import Handler
- */
-function handleImport(e) {
-  const { importJSON } = useExport();
-  const file = e.target.files?.[0];
-  if (file) {
-    importJSON(file).then((project) => {
-      const { newProject } = useCurrentProject();
-      newProject(project);
-    }).catch((err) => {
-      alert('Gagal membuka file: ' + err.message);
-    });
-  }
-  e.target.value = '';
 }

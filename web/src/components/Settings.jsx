@@ -107,15 +107,8 @@ export function SettingsPage() {
 
           <div className="field">
             <label>
-              <input
-                type="checkbox"
-                checked={preferences.darkMode === true}
-                onChange={(e) => {
-                  const { savePreferences } = useSettingsStore.getState();
-                  savePreferences({ ...preferences, darkMode: e.target.checked });
-                }}
-              />
-              Mode gelap (belum diimplementasikan)
+              <input type="checkbox" checked={false} disabled />
+              Mode gelap (belum tersedia)
             </label>
           </div>
 
@@ -126,8 +119,12 @@ export function SettingsPage() {
       </section>
 
       <section className="settings-section">
-        <h2>Kunci API Gemini (TTS Server)</h2>
-        <p className="hint">Kunci disimpan sebagai hash (SHA-256), tidak pernah disimpan plaintext.</p>
+        {/* TODO: hubungkan kunci ini ke proxy TTS; saat ini hanya hash yang disimpan. */}
+        <h2>Kunci API Gemini (belum tersambung ke TTS)</h2>
+        <p className="hint">
+          Yang disimpan hanya hash SHA-256 dan 8 karakter terakhir, bukan kunci aslinya.
+          Fitur ini belum dipakai server TTS, jadi kunci belum bisa memanggil API.
+        </p>
 
         <button className="btn secondary" onClick={() => setShowKeyForm(!showKeyForm)}>
           {showKeyForm ? 'Batal' : '+ Tambah Kunci'}

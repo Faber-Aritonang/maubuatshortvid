@@ -3,7 +3,8 @@
  */
 
 import { useCallback, useRef, useEffect } from 'react';
-import { useEditorStore } from '../store/index.js';
+import { useEditorStore, useProjectStore } from '../store/index.js';
+import { useCurrentProject } from './useProjects.js';
 import { drawProject, projectDuration, sceneAt, CANVAS_W, CANVAS_H } from '../renderer.js';
 import { speakAll, stopSpeak, ensureTiming } from '../tts.js';
 import { exportVideo, downloadBlob } from '../exporter.js';

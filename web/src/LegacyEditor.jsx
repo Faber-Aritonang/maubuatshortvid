@@ -452,7 +452,7 @@ export default function App() {
           <p className="sub">
             Proyek: <strong>{title}</strong>
             {ideaTitle ? <> · Ide: <strong>{ideaTitle}</strong></> : null}
-            {' · '}Naskah → Suara TTS → Subtitle → Animasi → Export MP4. Render 100% di browser.
+            {' · '}Ide → Naskah → Suara TTS → Subtitle → Animasi → Export MP4. Render 100% di browser.
           </p>
         </div>
         <div className="topbtn">

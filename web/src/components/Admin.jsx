@@ -281,7 +281,7 @@ function UsersTab({ users, plans, onUpdatePlan, onUpdateRole }) {
           <tbody>
             {users.map((user) => (
               <tr key={user.id}>
-                <td>{user.display_name || '—'}</td>
+                <td>{user.display_name || '-'}</td>
                 <td>{user.email}</td>
                 <td>
                   <select
@@ -586,7 +586,7 @@ function AffiliatesTab({ affiliates }) {
               <tr key={aff.id}>
                 <td><code>{aff.code}</code></td>
                 <td>
-                  <div>{aff.profiles?.display_name || '—'}</div>
+                  <div>{aff.profiles?.display_name || '-'}</div>
                   <small>{aff.profiles?.email}</small>
                 </td>
                 <td>{aff.commission_rate}%</td>

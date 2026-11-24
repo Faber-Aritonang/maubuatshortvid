@@ -2,7 +2,11 @@
 
 ## Tujuan
 Prototype v0.2 membuktikan satu loop penuh dengan backend seminimal mungkin:
-`Naskah -> Suara TTS -> Subtitle -> Animasi -> Export MP4`, render dan encode 100% di browser.
+`Ide -> Naskah -> Suara TTS -> Subtitle -> Animasi -> Export MP4`, render dan encode 100% di browser.
+
+Alur produk dimulai dari halaman ide (`/app/trial/ide`): topik diubah menjadi beberapa
+ide oleh LLM server (atau engine lokal sebagai cadangan), lalu ide yang dipilih menjadi
+naskah per scene di studio.
 
 ## Diagram
 

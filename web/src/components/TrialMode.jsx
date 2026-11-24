@@ -155,7 +155,8 @@ export default function TrialMode() {
           </div>
 
           <p className="trial-mode-flow">
-            <strong>Setelah ini:</strong> Naskah{' '}
+            <strong>Setelah ini:</strong> Ide{' '}
+            <span aria-hidden="true">→</span> Naskah{' '}
             <span aria-hidden="true">→</span> Suara{' '}
             <span aria-hidden="true">→</span> Animasi{' '}
             <span aria-hidden="true">→</span> Video jadi

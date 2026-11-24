@@ -3,7 +3,7 @@
 Prototype open-source pembuat video pendek vertikal (terinspirasi alur kerja umum
 aplikasi sejenis, **bukan salinan** SatsetMotion atau aset/kode milik pihak lain).
 
-Alur: **Naskah → Suara TTS sungguhan → Subtitle kata-per-kata → Animasi Canvas → Export MP4** —
+Alur: **Ide → Naskah → Suara TTS sungguhan → Subtitle kata-per-kata → Animasi Canvas → Export MP4** —
 render dan encode 100% di browser, tanpa antre render di server.
 
 > Status: prototype v0.3. Perbaikan bug kritikal (aturan hooks, komponen async, impor yang hilang)
@@ -61,11 +61,12 @@ Kunci API hanya dibaca server; tidak pernah ikut ke bundle browser.
 
 ## Cara pakai
 
-1. Tulis naskah per scene, atur gaya subtitle / kamera / transisi / durasi.
-2. **Buat suara TTS** → audio per scene disusun jadi satu timeline (pratinjau memakai audio yang sama).
-3. **Putar** untuk cek sinkronisasi; geser seekbar untuk melompat.
-4. (Opsional) **Pilih gambar** di tiap scene untuk gambar latar foto (diperkecil otomatis, menutupi layar).
-5. **Export MP4** (atau WebM) — hasilnya langsung terunduh, sudah ada suaranya.
+1. Buka halaman **Ide**, isi topik dan durasi. Server LLM menyusun 4 ide; kalau server belum siap, engine lokal menyiapkan cadangan.
+2. **Pilih ide** → kalimat per scene masuk studio. Atur gaya subtitle / kamera / transisi / durasi.
+3. **Buat suara TTS** → audio per scene disusun jadi satu timeline (pratinjau memakai audio yang sama).
+4. **Putar** untuk cek sinkronisasi; geser seekbar untuk melompat.
+5. (Opsional) **Pilih gambar** di tiap scene untuk gambar latar foto (diperkecil otomatis, menutupi layar).
+6. **Export MP4** (atau WebM) — hasilnya langsung terunduh, sudah ada suaranya.
 
 Export memakai WebCodecs lewat [mediabunny](https://mediabunny.dev): frame digambar
 dan di-encode lebih cepat dari realtime, lalu audio TTS dimux ke dalam file.

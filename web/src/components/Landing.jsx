@@ -118,7 +118,7 @@ const FEATURES = [
 const FAQS = [
   {
     q: 'Aku gak bisa edit video sama sekali. Bisa pakai?',
-    a: 'Bisa. Kamu cukup menulis naskah per scene. Subtitle, kamera, dan transisi sudah punya nilai awal, dan semuanya bisa diubah kalau mau.',
+    a: 'Bisa. Kamu cukup menulis ide atau topik. Naskah per scene, subtitle, kamera, dan transisi sudah punya nilai awal, dan semuanya bisa diubah kalau mau.',
   },
   {
     q: 'Suaranya dari mana?',
@@ -147,7 +147,7 @@ const FAQS = [
 ];
 
 const SAMPLE_NARRATION =
-  'Misalnya temanmu jualan kue pukis. Foto produknya sudah ada. Masukkan fotonya ke Satset, tulis singkat soal jualannya, lalu atur naskah dan subtitle per scene.';
+  'Misalnya temanmu jualan kue pukis. Foto produknya sudah ada. Masukkan fotonya ke Satset, tulis ide jualannya, lalu atur naskah dan subtitle per scene.';
 
 function Ticker() {
   const [paused, setPaused] = useState(false);
@@ -374,9 +374,9 @@ export default function Landing() {
               <span className="marker">satset jadi.</span>
             </h1>
             <p className="hero-lead">
-              Tulis naskah per scene. Satset Motion menyiapkan subtitle, suara, kamera,
-              dan transisi. Hasilnya video vertikal 9:16 yang siap kamu unggah ke TikTok,
-              Reels, atau Shorts.
+              Mulai dari satu ide. Satset Motion menyiapkan naskah per scene, subtitle,
+              suara, kamera, dan transisi. Hasilnya video vertikal 9:16 yang siap kamu
+              unggah ke TikTok, Reels, atau Shorts.
             </p>
             <div className="hero-actions">
               <a className="btn btn-primary" href="#hasil">
@@ -478,7 +478,7 @@ export default function Landing() {
             <ol className="step-grid">
               <li className="step-card">
                 <span className="step-num">1</span>
-                <h3>Tulis topik atau naskah</h3>
+                <h3>Tulis ide atau topik</h3>
                 <p>
                   Mulai dari satu kalimat. Pecah jadi beberapa scene, masing-masing
                   2 sampai 15 detik.
@@ -570,7 +570,7 @@ export default function Landing() {
               <p className="kicker">Gratis</p>
               <h2 id="offer-title">Cobain dulu. Studio-nya terbuka.</h2>
               <p className="section-lead">
-                Tidak ada akun wajib untuk mulai. Buka studio, tulis naskah, dan lihat
+                Tidak ada akun wajib untuk mulai. Buka halaman ide, pilih ide, lalu lihat
                 hasilnya di preview.
               </p>
             </div>

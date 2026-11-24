@@ -53,12 +53,7 @@ export default function Trial() {
 
       <main className="trial-main">
         <section className="trial-welcome" aria-labelledby="trial-title">
-          <h1 id="trial-title">
-            Halo, {displayName}!{' '}
-            <span className="trial-wave" aria-hidden="true">
-              👋
-            </span>
-          </h1>
+          <h1 id="trial-title">Halo, {displayName}!</h1>
           <p className="trial-sub">
             Yuk bikin video pertamamu. Mulai dengan membuat proyek baru.
           </p>

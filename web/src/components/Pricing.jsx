@@ -35,18 +35,14 @@ export function PricingPage() {
 
   const handleSelectPlan = (plan) => {
     if (plan.id === 'free') {
-      if (isAuthenticated) {
-        navigate('/studio');
-      } else {
-        navigate('/register', { state: { plan: plan.id } });
-      }
-    } else {
-      if (isAuthenticated) {
-        // TODO: Redirect to checkout/payment flow
-        alert(`Checkout untuk paket ${plan.name} belum diimplementasikan.`);
-      } else {
-        navigate('/register', { state: { plan: plan.id } });
-      }
+      navigate(isAuthenticated ? '/studio' : '/register', {
+        state: isAuthenticated ? undefined : { plan: plan.id },
+      });
+      return;
+    }
+    // TODO: alur checkout belum ada; tombol sengaja dinonaktifkan setelah login.
+    if (!isAuthenticated) {
+      navigate('/register', { state: { plan: plan.id } });
     }
   };
 
@@ -71,8 +67,8 @@ export function PricingPage() {
   return (
     <div className="pricing-page">
       <header className="pricing-header">
-        <h1>Pilih Paket yang Tepat</h1>
-        <p>Semua paket termasuk akses ke editor browser penuh — Naskah → Suara → Subtitle → Animasi → Export</p>
+        <h1>Paket dan batas pemakaian</h1>
+        <p>Semua paket membuka editor di browser: ide, naskah, suara, subtitle, animasi, export.</p>
       </header>
 
       <div className="pricing-grid">
@@ -113,9 +109,18 @@ export function PricingPage() {
             <button
               className={`btn ${plan.id === 'free' ? 'secondary' : 'primary'} ${plan.id === 'pro' ? 'wide' : ''}`}
               onClick={() => handleSelectPlan(plan)}
-              disabled={!plan.is_active}
+              disabled={!plan.is_active || (plan.id !== 'free' && isAuthenticated)}
+              title={
+                plan.id !== 'free' && isAuthenticated
+                  ? 'Checkout belum tersedia di prototype ini'
+                  : undefined
+              }
             >
-              {plan.id === 'free' ? 'Gunakan Gratis' : 'Pilih Paket Ini'}
+              {plan.id === 'free'
+                ? 'Gunakan Gratis'
+                : plan.id !== 'free' && isAuthenticated
+                  ? 'Checkout belum tersedia'
+                  : 'Pilih Paket Ini'}
             </button>
           </article>
         ))}
@@ -178,32 +183,13 @@ export function PricingPage() {
                 <td>TTS Browser (Gratis)</td>
                 {plans.map((plan) => <td key={plan.id}>✓</td>)}
               </tr>
-              <tr>
-                <td>TTS Server (Gemini)</td>
-                {plans.map((plan) => (
-                  <td key={plan.id}>{plan.id !== 'free' ? '✓' : 'Upgrade'}</td>
-                ))}
-              </tr>
-              <tr>
-                <td>Simpan Proyek Cloud</td>
-                {plans.map((plan) => (
-                  <td key={plan.id}>{plan.id !== 'free' ? '✓' : 'Lokal saja'}</td>
-                ))}
-              </tr>
-              <tr>
-                <td>Prioritas Support</td>
-                {plans.map((plan) => (
-                  <td key={plan.id}>{plan.id === 'agency' ? '✓ Prioritas' : plan.id === 'pro' ? '✓ Standar' : 'Komunitas'}</td>
-                ))}
-              </tr>
             </tbody>
           </table>
         </div>
       </section>
 
       <footer className="pricing-footer">
-        <p>Semua harga dalam Rupiah (IDR). Pajak sudah termasuk. Bisa batal kapan saja.</p>
-        <p>Butuh paket custom? <a href="/contact">Hubungi kami</a></p>
+        <p>Semua harga dalam Rupiah (IDR). Prototype ini belum punya alur pembayaran.</p>
       </footer>
     </div>
   );
